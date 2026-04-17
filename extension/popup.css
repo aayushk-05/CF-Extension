@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  width: 370px;
+  width: 420px;
   background: #0f172a;
   color: #e2e8f0;
 }
@@ -15,16 +15,127 @@ h1 {
   font-size: 16px;
 }
 
+.section-title {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.hint {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.lines-per-test-section {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+}
+
+.lines-per-test-section input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px;
+  background: #020617;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.lines-per-test-section code {
+  font-size: 10px;
+  color: #a5b4fc;
+}
+
 .muted {
   margin: 0 0 12px;
   color: #94a3b8;
   font-size: 12px;
 }
 
+.mode-switch {
+  display: flex;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.mode-btn {
+  flex: 1;
+  margin: 0;
+  border-radius: 0;
+  background: #0f172a;
+  font-size: 12px;
+  padding: 9px 8px;
+}
+
+.mode-btn.is-active {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.mode-panel.panel-hidden {
+  display: none;
+}
+
+.shared-actions {
+  margin-top: 4px;
+}
+
+.shared-actions button {
+  width: 100%;
+}
+
 section {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.manual {
+  display: block;
+}
+
+.copy-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.copy-field-btn {
+  flex: 1 1 42%;
+  min-width: 118px;
+  font-size: 11px;
+  padding: 7px 6px;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px;
+  resize: vertical;
+  background: #020617;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 12px;
 }
 
 button {
@@ -48,12 +159,15 @@ button:disabled {
 
 pre {
   margin-top: 8px;
-  max-height: 260px;
+  max-height: 220px;
   overflow: auto;
   background: #020617;
   color: #cbd5e1;
   padding: 8px;
   border-radius: 6px;
   white-space: pre-wrap;
+  tab-size: 4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   word-break: break-word;
+  font-size: 11px;
 }

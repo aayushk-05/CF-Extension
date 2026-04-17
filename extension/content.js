@@ -1,62 +1,96 @@
-function getTextFromSelectors(selectors) {
-  for (const selector of selectors) {
-    const node = document.querySelector(selector);
-    if (node && node.textContent && node.textContent.trim()) {
-      return node.textContent.trim();
+/** Prefer text that actually contains a checker / WA line, not the first tiny verdict badge. */
+function collectTextForFailureParsing() {
+  const bodyText = (document.body && document.body.innerText) ? document.body.innerText.trim() : "";
+  if (/wrong answer/i.test(bodyText) && /numbers differ/i.test(bodyText)) {
+    return bodyText;
+  }
+
+  const nodes = document.querySelectorAll("pre, .program-source, .judge-comment, .alert, .error-message");
+  for (const node of nodes) {
+    const t = node.textContent || "";
+    if (/wrong answer/i.test(t) && (/expected/i.test(t) || /found/i.test(t))) {
+      return t.trim();
     }
   }
-  return "";
+
+  return bodyText;
 }
 
-function parseFailureText(rawText) {
-  const text = rawText.replace(/\r/g, "\n");
-  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
-  const joined = lines.join(" ");
-
-  const testIndexMatch =
-    joined.match(/(?:test|input)\s*#?\s*(\d+)/i) ||
-    joined.match(/(\d+)(?:st|nd|rd|th)\s+input/i);
-  const expectedMatch =
-    joined.match(/(?:expected|answer|correct output)\s*[:=]\s*([^\n;]+)/i) ||
-    joined.match(/(?:is|was)\s*([-\d]+(?:\.\d+)?)\s*(?:but|and)\s*(?:my|your|got)/i);
-  const actualMatch =
-    joined.match(/(?:actual|your output|got)\s*[:=]\s*([^\n;]+)/i) ||
-    joined.match(/(?:my|your)\s+output\s*(?:is|was)?\s*([-\d]+(?:\.\d+)?)/i);
-
-  return {
-    testIndex: testIndexMatch ? Number(testIndexMatch[1]) : null,
-    expected: expectedMatch ? expectedMatch[1].trim() : null,
-    actual: actualMatch ? actualMatch[1].trim() : null,
-    message: joined
-  };
+function looksLikeProgramSource(text) {
+  const t = text.slice(0, 2000);
+  return /#include|using\s+namespace|int\s+main|^\s*import\s|^\s*from\s+\w+\s+import|^\s*def\s+\w+\s*\(|public\s+class\s+\w+/m.test(
+    t
+  );
 }
 
-function extractFailureDetails() {
-  const sourceText = getTextFromSelectors([
-    ".verdict-format-judged",
-    ".program-source",
-    ".judge-comment",
-    ".alert",
-    ".error-message",
-    ".submission-result",
-    "body"
-  ]);
+/** Codeforces submission view: testcase input is usually under `.input pre`, not `.output pre`. */
+function findTestInputBlockText() {
+  const directCandidates = document.querySelectorAll(".input pre, .test-input pre, [data-input] pre");
+  for (const pre of directCandidates) {
+    const trimmed = (pre.textContent || "").trim();
+    if (!trimmed) continue;
+    if (/wrong answer/i.test(trimmed) && /expected:/i.test(trimmed)) continue;
+    if (looksLikeProgramSource(trimmed)) continue;
+    return trimmed;
+  }
 
+  const pres = Array.from(document.querySelectorAll("pre"));
+  let best = "";
+  let bestScore = 0;
+
+  for (const pre of pres) {
+    if (pre.closest(".output, .answer, .expected-output, .judge-output")) continue;
+    const t = pre.textContent || "";
+    const trimmed = t.trim();
+    if (!trimmed) continue;
+    if (/wrong answer/i.test(trimmed) && /expected:\s*['"]/i.test(trimmed)) continue;
+    if (looksLikeProgramSource(trimmed)) continue;
+
+    const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 1) continue;
+
+    const numericTokens = trimmed.split(/\s+/).filter((tok) => /^-?\d+$/.test(tok));
+    let score = lines.length * 100 + numericTokens.length;
+    if (pre.closest(".input, .test-input, [class*='input']")) score += 50000;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = trimmed;
+    }
+  }
+
+  return best || null;
+}
+
+function normalizeLinesPerTest(value) {
+  if (value == null || value === "") return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 1) return null;
+  return n;
+}
+
+function extractFailureDetails(linesPerTest) {
+  const sourceText = collectTextForFailureParsing();
   const parsed = parseFailureText(sourceText);
+  const inputBlock = findTestInputBlockText();
 
-  // Try to locate explicit failing test input if page includes it.
-  const inputNode = document.querySelector(".input pre, .test-example-line, .sample-test pre");
-  const failingInput = inputNode?.textContent?.trim() || null;
+  return buildSlimFailurePayload(parsed, {
+    inputBlock,
+    linesPerTest: normalizeLinesPerTest(linesPerTest)
+  });
+}
 
-  return {
-    url: window.location.href,
-    title: document.title,
-    failingTestIndex: parsed.testIndex,
-    failingInput,
-    expectedOutput: parsed.expected,
-    yourOutput: parsed.actual,
-    rawMessage: parsed.message
-  };
+function buildFailureDetailsFromPayload(payload) {
+  const rawText = payload?.rawText || "";
+  const manualInput = (payload?.manualInput || "").trim();
+  const parsed = parseFailureText(rawText);
+  const pageInput = findTestInputBlockText();
+  const inputBlock = manualInput || pageInput;
+
+  return buildSlimFailurePayload(parsed, {
+    inputBlock,
+    linesPerTest: normalizeLinesPerTest(payload?.linesPerTest)
+  });
 }
 
 function textContentList(selector) {
@@ -70,12 +104,11 @@ function scrapeSamples() {
   const cfInputs = textContentList(".sample-test .input pre");
   const cfOutputs = textContentList(".sample-test .output pre");
   if (cfInputs.length && cfOutputs.length) {
-    const tests = cfInputs.map((input, idx) => ({
+    return cfInputs.map((input, idx) => ({
       index: idx + 1,
       input,
       output: cfOutputs[idx] || ""
     }));
-    return tests;
   }
 
   // AtCoder style
@@ -115,10 +148,11 @@ function scrapeSamples() {
   return [];
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+const extApi = globalThis.browser || globalThis.chrome;
+extApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   try {
     if (message.type === "EXTRACT_FAILURE_DETAILS") {
-      const details = extractFailureDetails();
+      const details = extractFailureDetails(message.payload?.linesPerTest);
       sendResponse({ ok: true, data: details });
       return;
     }
@@ -136,6 +170,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           tests
         }
       });
+      return;
+    }
+    if (message.type === "PARSE_RAW_FAILURE_TEXT") {
+      const details = buildFailureDetailsFromPayload(message.payload || {});
+      sendResponse({ ok: true, data: details });
     }
   } catch (error) {
     sendResponse({ ok: false, error: error.message });
