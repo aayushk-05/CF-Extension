@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CP Helper</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1>CP Helper</h1>
+      <p class="muted">Failed test extractor + sample test exporter</p>
+
+      <section>
+        <button id="extract-btn">Extract failed case</button>
+        <button id="copy-btn" disabled>Copy as JSON</button>
+      </section>
+
+      <section>
+        <button id="scrape-btn">Scrape sample tests</button>
+        <button id="download-btn" disabled>Download tests.json</button>
+      </section>
+
+      <pre id="output">No data yet.</pre>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "CP Failed Case Helper",
+  "version": "1.0.0",
+  "description": "Extract failed test details and export sample tests from CP problem pages.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "storage"
+  ],
+  "action": {
+    "default_title": "CP Helper",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://codeforces.com/*",
+        "https://atcoder.jp/*",
+        "https://www.codechef.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

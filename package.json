@@ -1,0 +1,9 @@
+{
+  "name": "cp-helper-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser extension + local test runner for competitive programming debugging",
+  "scripts": {
+    "run:tests": "node scripts/run-tests.js"
+  }
+}
